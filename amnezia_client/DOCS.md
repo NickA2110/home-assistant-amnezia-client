@@ -83,7 +83,9 @@ are empty.
 - The add-on changes host routes and therefore requires `/dev/net/tun`, host
   networking, and `NET_ADMIN`. Review every imported profile before starting.
 - DNS from the profile is applied through `resolvconf` for the add-on runtime;
-  do not assume it reconfigures every Home Assistant container.
+  before bringing up `awg0`, the add-on registers Supervisor's existing DNS as
+  the base configuration to avoid the Home Assistant OS signature mismatch.
+  Do not assume the profile DNS reconfigures every Home Assistant container.
 - Dynamic testing on a real Home Assistant OS host is still required before
   production use. Test first with a narrow, non-overlapping remote subnet and
   keep local console access available.

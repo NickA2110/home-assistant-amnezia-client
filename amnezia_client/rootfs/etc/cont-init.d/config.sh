@@ -22,4 +22,8 @@ if ! validate-awg-config "${config_file}"; then
     bashio::exit.nok "Invalid or unsafe AmneziaWG configuration"
 fi
 
+if ! prepare-resolvconf "${config_file}"; then
+    bashio::exit.nok "Could not prepare DNS management for AmneziaWG"
+fi
+
 bashio::log.info "AmneziaWG configuration validated"

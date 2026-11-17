@@ -45,6 +45,9 @@ jobs:
       - name: Build metadata tests
         run: ./tests/test-build-metadata.sh
 
+      - name: DNS preparation tests
+        run: ./tests/test-prepare-resolvconf.sh
+
       - name: YAMLlint
         run: |
           pip install --quiet yamllint

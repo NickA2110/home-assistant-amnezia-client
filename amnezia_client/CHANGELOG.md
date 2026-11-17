@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2
+
+- Fixed `resolvconf: signature mismatch` when an imported profile contains a
+  `DNS` setting on Home Assistant OS.
+- Explicitly selected the AmneziaWG userspace implementation when the host has
+  no AmneziaWG kernel module.
+
 ## 0.1.1
 
 - Fixed Home Assistant Supervisor builds by defining the runtime base image

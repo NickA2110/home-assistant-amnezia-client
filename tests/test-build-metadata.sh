@@ -16,6 +16,6 @@ if grep -Eq '^[[:space:]]*ARG[[:space:]]+BUILD_FROM' "${dockerfile}"; then
     exit 1
 fi
 
-grep -Fq 'version: 0.1.1' "${project_dir}/amnezia_client/config.yaml"
+grep -Fq 'version: 0.1.2' "${project_dir}/amnezia_client/config.yaml"
 
 echo "Build metadata tests passed"
