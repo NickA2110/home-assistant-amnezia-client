@@ -1,0 +1,10 @@
+#!/usr/bin/with-contenv bashio
+set -u
+
+declare interface="awg0"
+declare config="/etc/amnezia/amneziawg/${interface}.conf"
+
+bashio::log.info "Stopping AmneziaWG interface ${interface}"
+awg-quick down "${config}" >/dev/null 2>&1 || true
+rm -f "/run/amneziawg/${interface}.sock" "/var/run/amneziawg/${interface}.sock"
+pkill -x amneziawg-go >/dev/null 2>&1 || true

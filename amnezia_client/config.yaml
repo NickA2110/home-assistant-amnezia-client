@@ -1,0 +1,44 @@
+---
+name: AmneziaWG Client
+version: 0.1.0
+slug: amnezia_client
+description: Userspace AmneziaWG split-tunnel client
+url: https://github.com/NickA2110/home-assistant-amnezia-client
+stage: experimental
+arch:
+  - aarch64
+  - amd64
+startup: services
+boot: auto
+host_network: true
+init: false
+privileged:
+  - NET_ADMIN
+devices:
+  - /dev/net/tun
+options:
+  configuration: |-
+    [Interface]
+    PrivateKey =
+    Address = 10.8.1.2/32
+    DNS = 1.1.1.1
+    MTU = 1280
+    Jc = 4
+    Jmin = 10
+    Jmax = 50
+    S1 = 0
+    S2 = 0
+    H1 = 1
+    H2 = 2
+    H3 = 3
+    H4 = 4
+
+    [Peer]
+    PublicKey =
+    PresharedKey =
+    Endpoint = vpn.example.com:51820
+    AllowedIPs = 10.8.1.0/24
+    PersistentKeepalive = 25
+schema:
+  log_level: list(trace|debug|info|notice|warning|error|fatal)?
+  configuration: str

@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+set -euo pipefail
+shopt -s extglob
+
+config="${1:-}"
+if [[ -z "${config}" || ! -s "${config}" ]]; then
+    echo "AmneziaWG configuration is empty" >&2
+    exit 1
+fi
+section=""
+interface_private_key=0
+peer_count=0
+peer_public_key=0
+peer_endpoint=0
+peer_allowed_ips=0
+
+finish_peer() {
+    if (( peer_count == 0 )); then
+        return
+    fi
+    if (( ! peer_public_key || ! peer_endpoint || ! peer_allowed_ips )); then
+        echo "Peer ${peer_count} requires PublicKey, Endpoint, and AllowedIPs" >&2
+        exit 1
+    fi
+}
+
+while IFS= read -r raw_line || [[ -n "${raw_line}" ]]; do
+    line="${raw_line//$'\r'/}"
+    line="${line%%#*}"
+    line="${line##+([[:space:]])}"
+    line="${line%%+([[:space:]])}"
+    [[ -n "${line}" ]] || continue
+
+    if [[ "${line}" =~ ^\[([^]]+)\]$ ]]; then
+        next_section="${BASH_REMATCH[1]}"
+        if [[ "${next_section}" == "Peer" ]]; then
+            finish_peer
+            peer_count=$((peer_count + 1))
+            peer_public_key=0
+            peer_endpoint=0
+            peer_allowed_ips=0
+        fi
+        section="${next_section}"
+        continue
+    fi
+
+    if [[ "${line}" != *"="* ]]; then
+        echo "Invalid configuration line (expected key = value)" >&2
+        exit 1
+    fi
+
+    key="${line%%=*}"
+    value="${line#*=}"
+    key="${key%%+([[:space:]])}"
+    value="${value##+([[:space:]])}"
+    value="${value%%+([[:space:]])}"
+
+    case "${key}" in
+        PreUp|PostUp|PreDown|PostDown)
+            echo "${key} is not allowed in this privileged add-on" >&2
+            exit 1
+            ;;
+        SaveConfig)
+            echo "SaveConfig is not supported" >&2
+            exit 1
+            ;;
+    esac
+
+    if [[ "${section}" == "Interface" && "${key}" == "PrivateKey" && -n "${value}" ]]; then
+        interface_private_key=1
+    elif [[ "${section}" == "Peer" ]]; then
+        case "${key}" in
+            PublicKey)
+                [[ -z "${value}" ]] || peer_public_key=1
+                ;;
+            Endpoint)
+                [[ -z "${value}" ]] || peer_endpoint=1
+                ;;
+            AllowedIPs)
+                [[ -z "${value}" ]] || peer_allowed_ips=1
+                IFS=',' read -ra routes <<< "${value}"
+                for route in "${routes[@]}"; do
+                    route="${route##+([[:space:]])}"
+                    route="${route%%+([[:space:]])}"
+                    if [[ "${route}" == "0.0.0.0/0" || "${route}" == "::/0" ]]; then
+                        echo "Default routes are not supported; use split-tunnel AllowedIPs" >&2
+                        exit 1
+                    fi
+                done
+                ;;
+        esac
+    fi
+done < "${config}"
+
+finish_peer
+
+if (( ! interface_private_key )); then
+    echo "[Interface] requires a non-empty PrivateKey" >&2
+    exit 1
+fi
+if (( peer_count == 0 )); then
+    echo "At least one [Peer] section is required" >&2
+    exit 1
+fi

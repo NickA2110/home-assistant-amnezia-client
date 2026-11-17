@@ -1,0 +1,26 @@
+#!/usr/bin/with-contenv bashio
+set -euo pipefail
+
+declare interface="awg0"
+declare config="/etc/amnezia/amneziawg/${interface}.conf"
+
+export WG_QUICK_USERSPACE_IMPLEMENTATION=amneziawg-go
+
+bashio::log.info "Starting AmneziaWG userspace interface ${interface}"
+
+if awg show "${interface}" >/dev/null 2>&1 || ip link show "${interface}" >/dev/null 2>&1; then
+    bashio::log.warning "Removing a stale ${interface} interface"
+    awg-quick down "${config}" >/dev/null 2>&1 || true
+    rm -f "/run/amneziawg/${interface}.sock" "/var/run/amneziawg/${interface}.sock"
+fi
+
+if ! awg-quick up "${config}"; then
+    bashio::exit.nok "Could not start AmneziaWG interface ${interface}"
+fi
+
+if ! awg show "${interface}" >/dev/null 2>&1; then
+    bashio::exit.nok "AmneziaWG interface ${interface} did not become ready"
+fi
+
+bashio::log.info "AmneziaWG interface ${interface} is ready"
+exec sleep infinity

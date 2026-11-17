@@ -1,0 +1,94 @@
+---
+name: CI
+
+# yamllint disable-line rule:truthy
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ARCHITECTURES: '["amd64", "aarch64"]'
+  IMAGE_NAME: addon-amnezia-client
+
+jobs:
+  lint:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Home Assistant add-on linter
+        uses: frenck/action-addon-linter@v2.21.1
+        with:
+          path: ./amnezia_client
+
+      - name: Hadolint
+        uses: hadolint/hadolint-action@v3.5.0
+        with:
+          dockerfile: amnezia_client/Dockerfile
+
+      - name: ShellCheck
+        run: |
+          find amnezia_client/rootfs tests -type f -print0 \
+            | xargs -0 shellcheck --shell=bash
+
+      - name: Configuration validator tests
+        run: ./tests/test-config-validator.sh
+
+      - name: YAMLlint
+        run: |
+          pip install --quiet yamllint
+          yamllint --strict .
+
+  matrix:
+    name: Prepare build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Create multi-architecture matrix
+        id: matrix
+        uses: home-assistant/builder/actions/prepare-multi-arch-matrix@2026.09.0
+        with:
+          architectures: ${{ env.ARCHITECTURES }}
+          image-name: ${{ env.IMAGE_NAME }}
+          registry-prefix: ghcr.io/nicka2110
+
+  build:
+    name: Build ${{ matrix.arch }}
+    needs:
+      - lint
+      - matrix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.value) }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Build image without publishing
+        uses: home-assistant/builder/actions/build-image@2026.09.0
+        with:
+          arch: ${{ matrix.arch }}
+          context: amnezia_client
+          image: ${{ matrix.image }}
+          image-tags: test
+          version: test
+          push: "false"
+          cosign: "false"
+          load: "true"
+
+      - name: Check bundled binaries
+        env:
+          IMAGE: ${{ matrix.image }}:test
+        run: |
+          docker run --rm --entrypoint sh "${IMAGE}" -c \
+            'amneziawg-go --version && awg --version && command -v awg-quick'
