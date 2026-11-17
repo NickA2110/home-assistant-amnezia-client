@@ -12,6 +12,10 @@ The initial experimental release supports `amd64` and `aarch64` Home Assistant
 systems and split-tunnel routing only. It intentionally has no web UI or
 public port.
 
+The Dockerfile directly pins the multi-architecture Home Assistant base image.
+The add-on does not use the deprecated `build.yaml` mechanism or depend on an
+externally supplied `BUILD_FROM` value.
+
 ## Installation
 
 For local testing, copy the `amnezia_client` directory to `/addons/` on the

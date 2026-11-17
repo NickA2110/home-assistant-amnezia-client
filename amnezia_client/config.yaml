@@ -1,6 +1,6 @@
 ---
 name: AmneziaWG Client
-version: 0.1.0
+version: 0.1.1
 slug: amnezia_client
 description: Userspace AmneziaWG split-tunnel client
 url: https://github.com/NickA2110/home-assistant-amnezia-client

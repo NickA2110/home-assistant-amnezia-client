@@ -28,9 +28,7 @@ RUN CGO_ENABLED=0 make -C amneziawg-go \
         /out/usr/local/bin/awg-quick
 
 
-ARG BUILD_FROM=ghcr.io/hassio-addons/base:21.0.8
-# hadolint ignore=DL3006
-FROM ${BUILD_FROM}
+FROM ghcr.io/hassio-addons/base:21.0.8
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
